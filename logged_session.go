@@ -48,8 +48,8 @@ func newLoggedSession(l glog.Logger, sess Session) (Session, error) {
 	}
 
 	s.wg.Add(2)
-	go s.readStream(l, stdout)
-	go s.readStream(l, stderr)
+	go s.readStream(l.Tag("stdout"), stdout)
+	go s.readStream(l.Tag("stderr"), stderr)
 
 	return s, nil
 }
