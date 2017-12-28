@@ -1,6 +1,9 @@
 package gconn
 
-import "io"
+import (
+	"io"
+	"net"
+)
 
 type Session interface {
 	Close() error
@@ -16,5 +19,6 @@ type Session interface {
 
 type Client interface {
 	NewSession(cmd string, args ...string) (Session, error)
+	Dial(n, addr string) (net.Conn, error)
 	Close() error
 }

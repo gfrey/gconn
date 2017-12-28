@@ -2,7 +2,10 @@ package gconn
 
 import (
 	"io"
+	"net"
 	"os/exec"
+
+	"github.com/pkg/errors"
 )
 
 type localClient struct{}
@@ -18,6 +21,10 @@ func (lc *localClient) Close() error {
 
 func (lc *localClient) NewSession(cmd string, args ...string) (Session, error) {
 	return newLocalSession(cmd, args)
+}
+
+func (lc *localClient) Dial(n, addr string) (net.Conn, error) {
+	return nil, errors.Errorf("not supported yet")
 }
 
 type localSession struct {

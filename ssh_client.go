@@ -54,6 +54,10 @@ func (sc *sshClient) NewSession(cmd string, args ...string) (Session, error) {
 	return &sshSession{Session: s, withSudo: sc.config.User != "root", cmd: cmd, args: args}, nil
 }
 
+func (sc *sshClient) Dial(n, addr string) (net.Conn, error) {
+	return sc.client.Dial(n, addr)
+}
+
 func (sc *sshClient) Close() error {
 	return sc.client.Close()
 }
