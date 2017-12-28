@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -16,27 +15,12 @@ type sshClient struct {
 	addr   string
 	client *ssh.Client
 	config *ssh.ClientConfig
-	agent  agent.Agent
-
-	smutjeScript string
 }
 
 func NewSSHClient(addr, user string) (Client, error) {
 	sc := new(sshClient)
-	sc.config = new(ssh.ClientConfig)
 	sc.addr = addr
-	sc.config.User = user
-
-	sc.agent = sshAgent()
-
-	if sc.agent != nil {
-		signers, err := sc.agent.Signers()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to get signers from SSH agent: %s", err)
-		} else if len(signers) > 0 {
-			sc.config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signers...)}
-		}
-	}
+	sc.config = sshConfigWithAgentAuth(user)
 	sc.config.Auth = append(sc.config.Auth, ssh.PasswordCallback(sc.askForPassword))
 
 	var err error
@@ -60,21 +44,6 @@ func (sc *sshClient) Dial(n, addr string) (net.Conn, error) {
 
 func (sc *sshClient) Close() error {
 	return sc.client.Close()
-}
-
-func sshAgent() agent.Agent {
-	sshAuthSocket := os.Getenv("SSH_AUTH_SOCK")
-	if sshAuthSocket == "" {
-		return nil
-	}
-
-	agentConn, err := net.Dial("unix", sshAuthSocket)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to connect to SSH agent: %s", err)
-		return nil
-	}
-
-	return agent.NewClient(agentConn)
 }
 
 func (sc *sshClient) askForPassword() (string, error) {
