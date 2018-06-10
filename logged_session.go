@@ -3,19 +3,19 @@ package gconn
 import (
 	"bufio"
 	"io"
+	"log"
 	"sync"
 
-	"github.com/gfrey/glog"
 	"github.com/pkg/errors"
 )
 
 type loggedClient struct {
 	Client
 
-	l glog.Logger
+	l *log.Logger
 }
 
-func NewLoggedClient(l glog.Logger, c Client) Client {
+func NewLoggedClient(l *log.Logger, c Client) Client {
 	return &loggedClient{Client: c, l: l}
 }
 
@@ -34,7 +34,7 @@ type loggedSession struct {
 	wg *sync.WaitGroup
 }
 
-func newLoggedSession(l glog.Logger, sess Session) (Session, error) {
+func newLoggedSession(l *log.Logger, sess Session) (Session, error) {
 	s := &loggedSession{Session: sess, wg: new(sync.WaitGroup)}
 
 	stdout, err := s.Session.StdoutPipe()
@@ -48,8 +48,8 @@ func newLoggedSession(l glog.Logger, sess Session) (Session, error) {
 	}
 
 	s.wg.Add(2)
-	go s.readStream(l.Tag("stdout"), stdout)
-	go s.readStream(l.Tag("stderr"), stderr)
+	go s.readStream(l, "stdout", stdout)
+	go s.readStream(l, "stderr", stderr)
 
 	return s, nil
 }
@@ -68,12 +68,12 @@ func (lsess *loggedSession) StderrPipe() (io.Reader, error) {
 	return nil, errors.New("logged session has no access to stderr pipe!")
 }
 
-func (lsess *loggedSession) readStream(l glog.Logger, stream io.Reader) {
+func (lsess *loggedSession) readStream(l *log.Logger, sname string, stream io.Reader) {
 	defer lsess.wg.Done()
 
 	sc := bufio.NewScanner(stream)
 	for sc.Scan() {
-		l.Printf(sc.Text())
+		l.Printf(sname + " " + sc.Text())
 	}
 
 	if err := sc.Err(); err != nil {

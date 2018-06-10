@@ -3,8 +3,8 @@ package gconn
 import (
 	"bufio"
 	"io"
+	"log"
 
-	"github.com/gfrey/glog"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -20,7 +20,7 @@ func Run(c Client, cmd string, args ...string) error {
 }
 
 // Run a command with the given client sending all output to tagged logger.
-func RunWithLogger(l glog.Logger, c Client, cmd string, args ...string) error {
+func RunWithLogger(l *log.Logger, c Client, cmd string, args ...string) error {
 	sess, err := c.NewSession(cmd, args...)
 	if err != nil {
 		return err
@@ -37,19 +37,23 @@ func RunWithLogger(l glog.Logger, c Client, cmd string, args ...string) error {
 		return err
 	}
 
+	return runSessionLoggingStreams(l, sess, stdout, stderr)
+}
+
+func runSessionLoggingStreams(l *log.Logger, sess Session, stdout, stderr io.Reader) error {
 	g := errgroup.Group{}
-	g.Go(readStream(l.Tag("stdout"), stdout))
-	g.Go(readStream(l.Tag("stderr"), stderr))
+	g.Go(readStream(l, "stdout", stdout))
+	g.Go(readStream(l, "stderr", stderr))
 	g.Go(func() error { return sess.Run() })
 
 	return g.Wait()
 }
 
-func readStream(l glog.Logger, r io.Reader) func() error {
+func readStream(l *log.Logger, s string, r io.Reader) func() error {
 	return func() error {
 		sc := bufio.NewScanner(r)
 		for sc.Scan() {
-			l.Printf("%s", sc.Text())
+			l.Printf("%s %s", s, sc.Text())
 		}
 		return sc.Err()
 	}
