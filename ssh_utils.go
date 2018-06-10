@@ -75,10 +75,10 @@ func checkKnownHosts(hostname string, remote net.Addr, key ssh.PublicKey) error 
 		}
 	}
 
-	return errors.Errorf("unknown host (add the following to ~/.ssh/known_hosts)\n%s", MarshalKnownHostEntry(ip, key))
+	return errors.Errorf("unknown host (add the following to ~/.ssh/known_hosts)\n%s", marshalKnownHostEntry(ip, key))
 }
 
-func MarshalKnownHostEntry(ip string, key ssh.PublicKey) []byte {
+func marshalKnownHostEntry(ip string, key ssh.PublicKey) []byte {
 	b := &bytes.Buffer{}
 	b.WriteString(ip)
 	b.WriteByte(' ')
