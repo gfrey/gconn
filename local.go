@@ -10,6 +10,7 @@ import (
 
 type localClient struct{}
 
+// NewLocalClient will execute commands on the local machine.
 func NewLocalClient() Client {
 	return &localClient{}
 }

@@ -17,6 +17,8 @@ type sshClient struct {
 	config *ssh.ClientConfig
 }
 
+// NewSSHClient will connect via SSH to the given address using the user
+// specified.
 func NewSSHClient(addr, user string) (Client, error) {
 	sc := new(sshClient)
 	sc.addr = addr

@@ -6,6 +6,9 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// NewSSHProxyClient will create a connection through a proxy client, i.e. the
+// given client will be used as a proxy to the target configured in this
+// client.
 func NewSSHProxyClient(proxy Client, addr, user string) (Client, error) {
 	sc := new(sshClient)
 	sc.addr = fmt.Sprintf("%s:%d", addr, 22)

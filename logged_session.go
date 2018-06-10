@@ -16,6 +16,8 @@ type loggedClient struct {
 	l *log.Logger
 }
 
+// NewLoggedClient will create a client, that will send all session output and
+// error output to the given logger.
 func NewLoggedClient(l *log.Logger, c Client) Client {
 	return &loggedClient{Client: c, l: l}
 }

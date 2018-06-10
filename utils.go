@@ -19,7 +19,7 @@ func Run(c Client, cmd string, args ...string) error {
 	return sess.Run()
 }
 
-// Run a command with the given client sending all output to tagged logger.
+// RunWithLogger will send all output of the command to the given logger.
 func RunWithLogger(l *log.Logger, c Client, cmd string, args ...string) error {
 	sess, err := c.NewSession(cmd, args...)
 	if err != nil {
