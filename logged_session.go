@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"io"
 	"log"
-	"sync"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 type loggedClient struct {
@@ -31,11 +32,11 @@ func (lc *loggedClient) NewSession(cmd string, args ...string) (Session, error) 
 type loggedSession struct {
 	Session
 
-	wg *sync.WaitGroup
+	errG *errgroup.Group
 }
 
 func newLoggedSession(l *log.Logger, sess Session) (Session, error) {
-	s := &loggedSession{Session: sess, wg: new(sync.WaitGroup)}
+	s := &loggedSession{Session: sess, errG: new(errgroup.Group)}
 
 	stdout, err := s.Session.StdoutPipe()
 	if err != nil {
@@ -47,16 +48,17 @@ func newLoggedSession(l *log.Logger, sess Session) (Session, error) {
 		return nil, errors.Wrap(err, "failed to build stderr pipe")
 	}
 
-	s.wg.Add(2)
-	go s.readStream(l, "stdout", stdout)
-	go s.readStream(l, "stderr", stderr)
+	s.errG.Go(readStream(l, "stdout", stdout))
+	s.errG.Go(readStream(l, "stderr", stderr))
 
 	return s, nil
 }
 
 func (lsess *loggedSession) Close() error {
 	err := lsess.Session.Close()
-	lsess.wg.Wait()
+	if errStream := lsess.errG.Wait(); errStream != nil {
+		err = multierror.Append(err, errStream)
+	}
 	return err
 }
 
@@ -68,15 +70,11 @@ func (lsess *loggedSession) StderrPipe() (io.Reader, error) {
 	return nil, errors.New("logged session has no access to stderr pipe!")
 }
 
-func (lsess *loggedSession) readStream(l *log.Logger, sname string, stream io.Reader) {
-	defer lsess.wg.Done()
-
+func (lsess *loggedSession) readStream(l *log.Logger, sname string, stream io.Reader) error {
 	sc := bufio.NewScanner(stream)
 	for sc.Scan() {
 		l.Printf(sname + " " + sc.Text())
 	}
 
-	if err := sc.Err(); err != nil {
-		l.Printf("failed scanning stderr: %s", err)
-	}
+	return errors.Wrapf(sc.Err(), "failed scanning %s", sname)
 }
