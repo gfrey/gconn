@@ -1,37 +1,35 @@
 package gconn
 
 import (
-	"fmt"
 	"net"
-	"os"
 
 	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 type sshClient struct {
-	addr   string
 	client *ssh.Client
 	config *ssh.ClientConfig
 }
 
 // NewSSHClient will connect via SSH to the given address using the user
 // specified.
-func NewSSHClient(addr, user string) (Client, error) {
-	sc := new(sshClient)
-	sc.addr = addr
-	sc.config = sshConfigWithAgentAuth(user)
-	sc.config.Auth = append(sc.config.Auth, ssh.PasswordCallback(sc.askForPassword))
+func NewSSHClient(addr, user string, opts ...SSHOption) (Client, error) {
+	sCfg, err := newSSHCfg(addr, user, opts)
+	if err != nil {
+		return nil, err
+	}
 
-	var err error
-	addr = fmt.Sprintf("%s:%d", sc.addr, 22)
-	sc.client, err = ssh.Dial("tcp", addr, sc.config)
+	sc := &sshClient{config: sCfg.cc}
+	sc.client, err = ssh.Dial("tcp", sCfg.Address(), sCfg.cc)
 	return sc, errors.Wrap(err, "failed to connect to SSH host")
 }
 
 func (sc *sshClient) NewSession(cmd string, args ...string) (Session, error) {
+	if sc.client == nil {
+		return nil, errors.Errorf("sc.client is nil, why???")
+	}
 	s, err := sc.client.NewSession()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new SSH session")
@@ -46,11 +44,4 @@ func (sc *sshClient) Dial(n, addr string) (net.Conn, error) {
 
 func (sc *sshClient) Close() error {
 	return sc.client.Close()
-}
-
-func (sc *sshClient) askForPassword() (string, error) {
-	fmt.Printf("Password for %s@%s: ", sc.config.User, sc.addr)
-	buf, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-	fmt.Printf("\n")
-	return string(buf), errors.Wrap(err, "failed to read password")
 }

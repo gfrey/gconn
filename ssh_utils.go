@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,36 +14,18 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-func sshConfigWithAgentAuth(user string) *ssh.ClientConfig {
-	cfg := new(ssh.ClientConfig)
-	cfg.User = user
-	cfg.HostKeyCallback = checkKnownHosts
-
-	agent := sshAgent()
-	if agent != nil {
-		signers, err := agent.Signers()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to get signers from SSH agent: %s", err)
-		} else if len(signers) > 0 {
-			cfg.Auth = []ssh.AuthMethod{ssh.PublicKeys(signers...)}
-		}
-	}
-	return cfg
-}
-
-func sshAgent() agent.Agent {
+func sshAgent() (agent.Agent, error) {
 	sshAuthSocket := os.Getenv("SSH_AUTH_SOCK")
 	if sshAuthSocket == "" {
-		return nil
+		return nil, errors.Errorf("env variable SSH_AUTH_SOCK not set")
 	}
 
 	agentConn, err := net.Dial("unix", sshAuthSocket)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to connect to SSH agent: %s", err)
-		return nil
+		return nil, errors.Wrap(err, "failed to connect to SSH agent")
 	}
 
-	return agent.NewClient(agentConn)
+	return agent.NewClient(agentConn), nil
 }
 
 func checkKnownHosts(hostname string, remote net.Addr, key ssh.PublicKey) error {
