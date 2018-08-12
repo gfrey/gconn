@@ -7,7 +7,8 @@ import (
 
 // Session provides the interface for a command execution session.
 type Session interface {
-	// Close the session.
+	// Close the session. Might return io.EOF if the session was already
+	// closed. Especially with SSH that is expected behavior.
 	Close() error
 
 	// Get a handle to the standard input of the command session.
