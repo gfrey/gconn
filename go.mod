@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/jgroeneveld/trial v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
-	golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
+	golang.org/x/crypto v0.10.0
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 )
 
@@ -19,6 +19,6 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/prometheus/common v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
-	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 )
