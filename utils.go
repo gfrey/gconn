@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -45,7 +46,53 @@ func Run(c Client, cmd string, args ...string) (string, string, error) {
 	g.Go(func() error { return sess.Run() })
 	err = g.Wait()
 	return bufStdout.String(), bufStderr.String(), err
+}
 
+// The callback is given a line of output and returns the item search. The
+// boolean indicates whether to keep scanning.
+func RunWithScanner(c Client, fn func(string) (string, bool), cmd string, args ...string) (string, error) {
+	// determine whether the VM in question already exists
+	sess, err := c.NewSession(cmd, args...)
+	if err != nil {
+		return "", err
+	}
+	defer sess.Close()
+
+	stdout, err := sess.StdoutPipe()
+	if err != nil {
+		return "", err
+	}
+	if err := sess.Start(); err != nil {
+		return "", err
+	}
+
+	buf := bytes.NewBuffer(nil)
+	if _, err := io.Copy(buf, stdout); err != nil {
+		return "", err
+	}
+
+	if err := sess.Wait(); err != nil {
+		return "", err
+	}
+
+	result := ""
+
+	sc := bufio.NewScanner(buf)
+	for sc.Scan() {
+		r, stop := fn(sc.Text())
+		if r != "" {
+			result = r
+		}
+		if stop {
+			return result, nil
+		}
+	}
+
+	if err := sc.Err(); err != nil {
+		return "", errors.Wrap(err, "failed to scan output")
+	}
+
+	return result, nil
 }
 
 // RunWithLogger will send all output of the command to the given logger.
