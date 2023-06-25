@@ -20,5 +20,6 @@ require (
 	github.com/prometheus/common v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/term v0.9.0 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 )
